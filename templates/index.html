@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Documentation Assistant</title>
+    <meta name="description" content="A retrieval-grounded assistant that answers questions using only the official FastAPI documentation.">
+
+    <!-- Inline theme bootstrap: applies the saved theme before first paint, so there is no flash of the wrong theme. -->
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("fda-theme");
+                var theme = saved === "light" || saved === "dark" ? saved : "dark";
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%230b1120%22/><path d=%22M13 2 4 14h6l-1 8 9-12h-6l1-8Z%22 fill=%22%2305c793%22/></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div class="app">
+        <div class="bg-grid" aria-hidden="true"></div>
+
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/>
+                    </svg>
+                </span>
+                <div class="brand-text">
+                    <h1>FastAPI Docs Assistant</h1>
+                    <p class="brand-sub">Retrieval-grounded &middot; zero guesswork</p>
+                </div>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="status-pill" id="status-pill">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span class="status-text" id="status-text">Checking</span>
+                </div>
+
+                <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
+                    <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                    </svg>
+                    <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M12 2.5v2.4M12 19.1v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                </button>
+
+                <button class="icon-btn" id="clear-btn" type="button" aria-label="Clear conversation" title="Clear conversation">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M5 7h14M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M7 7l.8 12.1a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="chat-viewport">
+            <div class="chat-log" id="chat-log">
+
+                <div class="empty-state" id="empty-state">
+                    <span class="empty-badge">RAG &middot; FastAPI Documentation</span>
+                    <h2>Ask the documentation anything</h2>
+                    <p>Every answer is generated strictly from the indexed FastAPI docs. If it isn't in the docs, you'll get an honest &ldquo;not found&rdquo; instead of a guess.</p>
+
+                    <div class="suggestions" id="suggestions">
+                        <button class="suggestion" type="button" data-q="How do I declare path parameters in FastAPI?">
+                            <span class="suggestion-method get">GET</span>
+                            <span>Declaring path parameters</span>
+                        </button>
+                        <button class="suggestion" type="button" data-q="How does dependency injection work in FastAPI?">
+                            <span class="suggestion-method get">GET</span>
+                            <span>Dependency injection</span>
+                        </button>
+                        <button class="suggestion" type="button" data-q="How do I secure an endpoint with OAuth2 in FastAPI?">
+                            <span class="suggestion-method post">POST</span>
+                            <span>OAuth2 &amp; security</span>
+                        </button>
+                        <button class="suggestion" type="button" data-q="How do I write tests for a FastAPI application?">
+                            <span class="suggestion-method get">GET</span>
+                            <span>Testing an app</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <footer class="composer-shell">
+            <form class="composer" id="composer-form">
+                <textarea
+                    id="question-input"
+                    rows="1"
+                    placeholder="Ask about dependencies, security, testing, deployment…"
+                    autocomplete="off"
+                ></textarea>
+                <button class="send-btn" id="ask-button" type="submit" aria-label="Send question">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </form>
+            <p class="composer-hint">Enter to send &middot; Shift + Enter for a new line &middot; answers are grounded only in indexed docs</p>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
