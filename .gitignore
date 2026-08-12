@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Vector database (regenerate with ingest.py)
+chroma_db/
+
+# OS files
+.DS_Store
+Thumbs.db
